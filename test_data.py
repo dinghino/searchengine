@@ -21,7 +21,9 @@ class Person:
 
 
 class Profile:
-    """Profile object to handle faker.simple_profile dictionaries. """
+    """
+    Profile object to handle faker.simple_profile dictionaries.
+    """
 
     def __init__(self, address, birthdate, mail, name, sex, username, job):
         self.address = address
@@ -33,11 +35,10 @@ class Profile:
         self.job = job
 
     def __repr__(self):
-        s = '<Profile of `{u}` - {e} [{n} ({j})] >'.format(
+        s = '<Profile of `{u}` [{n} ({j})] >'.format(
             u=self.username,
             n=click.style(self.name, bold=True),
             j=self.job,
-            e=self.mail,
         )
         return s
 
