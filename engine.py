@@ -1,4 +1,5 @@
 import logging
+import re
 
 import click
 import jellyfish
@@ -21,51 +22,112 @@ class SearchEngine:
 
         def __init__(self, query, item, threshold):
             self.query = query
+            # TODO: Remove the item when it's not needed anymore for developing
+            # purposes. remember to remove it from the __repr__ call too.
             self.item = item
             self.threshold = threshold
 
-            self._matches = []
+            # organized data structure with all the relevant data from all the
+            # `add`ed match dictionaries, that will be used to calculate the
+            # item's match probability against the object
+            self._matches = {}
+            # self._matches = {
+            #     <match.key>: {
+            #         'match': <float>  <- avg mean on highest queries matches
+            #         <match.weight>: <int>,
+            #         'queries': {
+            #             <match.query>: [<float>, ...]
+            #         }
+            #     }
+            # }
             # actual match weight, weighted mean for all the matches
             self.weight = 0
             # highest match value currently present in _matches
             self.match = 0
             # highest matching key
             self.key = ''
-            # used to calculate self.weight when a new match is added
-            self._tot_weight = 0
-            self._tot_match = 0
 
-        def add(self,
-                match={'key': '', 'value': '', 'match': 0.0, 'weight': 0}):
+        def add(self, match):
+            k, w = match['key'], match['weight']
+            q, m = match['value'], match['match']
 
-            match['weight'] = ((match['match']**2) * match['weight']) + 1
+            keydata = self._matches.setdefault(k, {'weight': w, 'queries': {}})
+            querydata = keydata['queries'].setdefault(q, [])
+            querydata.append(m)
 
-            self._matches.append(match)
-            # matches with higher `match` first
-            self._matches.sort(key=lambda m: m['match'], reverse=True)
+            self._log_match_dict(match)
 
-            # set the new match and key attributes from the
-            # match dict with the highest match
-            self.match = self._matches[0]['match']
-            self.key = self._matches[0]['key']
-
-            self._update_mean_weight(match)
-
+        def _log_match_dict(self, match):
             # NOTE: LOGGING STUFF
             good = match['match'] >= .75
-            string = click.style('{}'.format(match),
+            mstring = 'NEW MATCH DICT: [ m: {m:.2f} - w: {w:.2f} ] ({q}) {k}: {v}'
+            mstring = mstring.format(
+                q=match['query'],
+                k=match['key'],
+                v=match['value'],
+                m=match['match'],
+                w=match['weight']
+            )
+            string = click.style('{}'.format(mstring),
                                  fg='yellow' if good else 'blue')
 
             log.debug(string)
 
-        def _update_mean_weight(self, match):
-            # calculate the new weighted mean
-            # FIXME: The problem is here. the weight of the
-            self._tot_match += (match['match'] * match['weight'])
-            self._tot_weight += match['weight']
-            self.weight = self._tot_match / self._tot_weight
-            # factor in the actual match distance on the weight
-            self.weight *= self.match
+        # def _get_primary_match(self):
+        #     """Return the match dict with the highest match value. """
+        #     m = None
+        #     for m in self._matches
+
+        def calculate(self):
+            """
+            Calculate the match with all the data added.
+            This method should be called when all the dataset have been added
+            to the match object.
+            """
+            d = self._matches
+            log.debug('Calculated match results:')
+            total_weight = 0
+            total_match = 0
+
+            for k in d.keys():
+                # get the highest match for each query/attr set, then calculate
+                # the match for the key as a mean avg from all the highest
+                # values
+                weight = d[k]['weight']
+                queries = d[k]['queries']
+
+                # sorted high->low of all the highest matches on each query
+                h_match = sorted([max(qmatch) for qmatch in queries.values()])
+                # factor in the `weight` of each match, using its position in
+                # the list as weight. this means that highest values have
+                # highest weight.
+                h_match = [m * (w + 1) for w, m in enumerate(h_match)]
+                # weighted average
+                match = sum(h_match) / sum(range(1, len(h_match) + 1))
+
+                d[k]['match'] = match
+
+                # add the key weight to the total weight
+                total_weight += weight
+                total_match += (match * weight)
+
+                # if the currently evaluated match is higher that the
+                # `primary match value`, switch both match and key
+                if match > self.match:
+                    self.match = match
+                    self.key = k
+
+                # NOTE: Logging stuff
+                ms = ''.join(['{:.2f}, '.format(m) for m in h_match])[:-2]
+                log.debug(click.style(
+                    '  {}: {:.2f} [{}]'.format(k, match, ms),
+                    fg='yellow' if match >= self.threshold else '')
+                )
+
+            # average weigthed mean between the matches and the key weights
+            # produces the actual weight of the match, that can be used
+            # in a Result to position it in its rightful place.
+            self.weight = (total_match / total_weight) + self.match
 
         @property
         def is_valid(self):
@@ -163,41 +225,42 @@ class SearchEngine:
         """
         match = SearchEngine.Match(query, item, self.threshold)
         keys = keys or self.keys
-        q_strings = query.split(' ')
+
+        def splitter(string):
+            return re.split(r'\W+', string)
+
+        q_strings = splitter(query)
 
         for key, weight in keys.items():
             attr = getattr(item, key, None)
-
-            match_dict = {
-                'key': key, 'value': attr,
-                'weight': weight, 'match': 0,
-            }
-            # populated by all the distances found while looping all the
-            # `attr` partial strings against all the partial query strings
-            values = []
             if not attr:
                 # TODO: Maybe raise exception, since at least one of the
                 # given keys are not present in the object?
                 continue
 
-            for partial in attr.split(' '):
+            for partial in splitter(attr):
+                if len(partial) <= 3:  # skip short words
+                    continue
                 for q in q_strings:
-                    values.append(self.get_distance(
-                        q, partial))
+                    match_dict = {
+                        'key': key,
+                        'value': partial,
+                        'query': q,
+                        'weight': weight,
+                        'match': self.get_distance(q, partial),
+                    }
+                    match.add(match_dict)
 
-            match_dict['match'] = max(values)
-
-            match.add(match_dict)
+        match.calculate()
 
         # NOTE: Logging stuff
-        is_match = match.weight >= self.threshold
         string = click.style(
             str(match),
-            fg='green' if is_match else '',
-            bold=True if is_match else False,
+            fg='green' if match.is_valid else '',
+            bold=True if match.is_valid else False,
         )
         log.info(string)
-        log.info('{}\n'.format('-' * 50))
+        log.info('{}\n'.format('-' * 79))
 
         return match
 
