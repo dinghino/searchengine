@@ -15,6 +15,8 @@ levels = {
     4: logging.DEBUG,
 }
 
+DATASET = people
+
 
 @click.command()
 @click.option('-v', '--verbose', count=True, default=1,
@@ -25,8 +27,8 @@ def main(verbose, limit):
         verbose = 4
     log.setLevel(levels[verbose])
 
-    # search = SearchEngine(keys=['fname', 'lname', 'job'])
-    search = SearchEngine(keys=['name', 'username', 'mail', 'job'])
+    search = SearchEngine(keys=['fname', 'lname', 'job'])
+    # search = SearchEngine(keys=['name', 'username', 'mail', 'job'])
 
     while True:
         click.clear()
@@ -36,7 +38,7 @@ def main(verbose, limit):
         if query == 'q':
             break
 
-        result = search(query, profiles)
+        result = search(query, DATASET)
 
         click.secho('\n{}'.format('-' * 79) * 3, fg='yellow')
 

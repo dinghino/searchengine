@@ -6,7 +6,8 @@ import jellyfish
 
 from test_data import people  # noqa - testing purposes, not used here
 
-# matching treshold to consider a search result a probable match
+# matching treshold to consider a search result a probable match.
+# Used as default value for SearchEngine initialization
 THRESHOLD = 0.75
 
 log = logging.getLogger('SearchEngine')
@@ -29,7 +30,6 @@ class Match:
         # organized data structure with all the relevant data from all the
         # `add`ed match dictionaries, that will be used to calculate the
         # item's match probability against the object
-        self._matches = {}
         # self._matches = {
         #     <match.key>: {
         #         'match': <float>  <- avg mean on highest queries matches
@@ -39,6 +39,8 @@ class Match:
         #         }
         #     }
         # }
+        self._matches = {}
+
         # actual match weight, weighted mean for all the matches
         self.weight = 0
         # highest match value currently present in _matches
@@ -59,7 +61,7 @@ class Match:
     def _log_match_dict(self, match):
         # NOTE: LOGGING STUFF
         good = match['match'] >= .75
-        mstring = 'NEW MATCH DICT: [ m: {m:.2f} - w: {w:.2f} ] ({q}) {k}: {v}'
+        mstring = 'Added: [ m: {m:.2f} - w: {w:.2f} ] `{q}` on {k}: `{v}`'
         mstring = mstring.format(
             q=match['query'],
             k=match['key'],
@@ -71,11 +73,6 @@ class Match:
                              fg='yellow' if good else 'blue')
 
         log.debug(string)
-
-    # def _get_primary_match(self):
-    #     """Return the match dict with the highest match value. """
-    #     m = None
-    #     for m in self._matches
 
     def calculate(self):
         """
@@ -95,18 +92,18 @@ class Match:
             weight = d[k]['weight']
             queries = d[k]['queries']
 
-            # sorted high->low of all the highest matches on each query
+            # sorted low->high of all the highest matches on each query
             h_match = sorted([max(qmatch) for qmatch in queries.values()])
             # factor in the `weight` of each match, using its position in
             # the list as weight. this means that highest values have
             # highest weight.
             h_match = [m * (w + 1) for w, m in enumerate(h_match)]
-            # weighted average
+            # weighted average for the key match probability
             match = sum(h_match) / sum(range(1, len(h_match) + 1))
-
             d[k]['match'] = match
 
-            # add the key weight to the total weight
+            # add the key weight to the key total values to calculate the
+            # key weighted average
             total_weight += weight
             total_match += (match * weight)
 
@@ -119,7 +116,10 @@ class Match:
             # NOTE: Logging stuff
             ms = ''.join(['{:.2f}, '.format(m) for m in h_match])[:-2]
             log.debug(click.style(
-                '  {}: {:.2f} [{}]'.format(k, match, ms),
+                '  {}: {} [{}]'.format(
+                    k,
+                    click.style('{:.2f}'.format(match), bold=True),
+                    ms),
                 fg='yellow' if match >= self.threshold else '')
             )
 
@@ -142,12 +142,16 @@ class Match:
 
 class Result:
     def __init__(self, data, match):
-        """Result generated through a search.
+        """
+        Result generated through a search, if the match is valid.
+        allows organization, filtering and sorting of the result data using
+        (primarily) the match object, or if needed the data itself (i.e. 
+        sort by `person.name`)
 
-        Args:
-            data (any): search result object
-            match (:class:`Match`): Match object describing
-                similarity between the `data` and the search query
+        Arguments:
+            data (any): object found with the search
+            match (:class:`Match`): Match object describing similarity
+                between the `data` and the search query
         """
 
         self.data = data
@@ -170,6 +174,26 @@ class Result:
 
 
 class SearchEngine:
+    """
+    SearchEngine for an arbitrary iterable of arbitrary objects.
+    attributes to search **must** be of type ``str``.
+
+    Search is performed using various distance algorithms and use weighted
+    mean averages to determine the relevance of attributes and results.
+
+    Attributes:
+        keys (list): a list of strings describing the names of the attributes
+            to perform the search. The position in the list determines the
+            weight of the attribute, meaning that in ``['name', 'surname']``,
+            a match for ``item.name`` is more important than ``item.surname``.
+        limit (int, optional): Maximum number of results to return when the
+            search has finished. if ``-1`` (default), all the matching results
+            will be returned.
+        threshold (float, optional): match threshold, determines the minimum
+            value for which a match is considered acceptable.
+            default is (0.75) (75%)
+
+    """
 
     def __init__(self, keys, limit=-1, threshold=THRESHOLD):
         self.threshold = threshold
@@ -180,6 +204,9 @@ class SearchEngine:
         # weight is in reverse order, meaning that first keys weights more
         key_values = reversed(range(1, len(keys) + 1))
         self.keys = dict(zip(keys, key_values))
+
+    # #####################################################
+    # Distance algorithms implementation
 
     def _jaro_winkler(self, s1, s2):
         return jellyfish.jaro_winkler(s1, s2, long_tolerance=True)
@@ -208,10 +235,19 @@ class SearchEngine:
                 'Search algorithm should be one of {}'.format(algos.keys())
             )
 
+    # #####################################################
+    # search functions
+
     def get_match(self, query, item, keys=None):
         """
         Calculate the equality match between `query` and `item`, checking
         all the item's `keys` provided when the search engine was setup.
+
+        Attributes:
+            query (str): query against the set of items
+            items (obj): iterable of items to look up
+            key (list, optional): If provided will override the SearchEngine
+                instance keys attribute and lookup in the one provided.
 
         Returns:
             dict: contains the `key`, `value` and key `weight` of the highest
@@ -238,11 +274,11 @@ class SearchEngine:
             attr = getattr(item, key, None)
             if not attr:
                 # TODO: Maybe raise exception, since at least one of the
-                # given keys are not present in the object?
+                # given keys is not present in the object?
                 continue
 
             for partial in splitter(attr):
-                if len(partial) <= 3:  # skip short words
+                if len(partial) < 3:  # skip short words
                     continue
                 for q in q_strings:
                     match_dict = {
@@ -263,11 +299,26 @@ class SearchEngine:
             bold=True if match.is_valid else False,
         )
         log.info(string)
-        log.info('{}\n'.format('-' * 79))
+        log.info('{}'.format('-' * 79))
+        log.debug('')
 
         return match
 
     def search(self, query, items, limit=None, keys=None):
+        """
+        Search for a query in an iterable of items, returning a list of
+        :class:`Result` objects that have a match chance higher than the
+        threshold of the SearchEngine object.
+
+        Attributes:
+            query (str): value to search for
+            items (iterable): any iterable (list, tuple, ...) of objects
+            limit (int): overrides the default SearchEngine limit if present
+                for the current search. if `-1` no limit is set.
+            keys (list): a list of ``str``, identifying the names of the
+                attributes to lookup in the items. Overrides the
+                SearchEngine.keys list for current search.
+        """
         self.results = []
         # Get the distance from the query for all the items in the items seq
         # matches = [self._jaro_winkler(query, item) for item in items]
@@ -280,17 +331,23 @@ class SearchEngine:
         ]
 
         # sort by match and return the results
-        self.sort_results_by_match()
+        self.results.sort(reverse=True)
+
         limit = limit or self.limit
         results = self.results[:limit] if limit > 0 else self.results
         # TODO: optional extra sorting of extracted results, i.e. by attribute
         return results
 
-    def sort_results_by_match(self):
-        self.results.sort(reverse=True)
-
     def __call__(self, query, items):
         """
-        Allow to call the engine directly to perform a search.
+        Allow to call the engine directly to perform a search, as in.
+        shortcut for :any:`SearchEngine.search`.
+
+        .. code-block:: python
+
+            finder = SearchEngine()
+            finder('john', people)
+            finder.search('john', people)
+
         """
         return self.search(query, items)
