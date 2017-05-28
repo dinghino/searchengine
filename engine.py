@@ -12,161 +12,164 @@ THRESHOLD = 0.75
 log = logging.getLogger('SearchEngine')
 
 
+class Match:
+    """
+    A Match object takes care of calculating and represents
+    the chance that item matches the search query, given a dataset of
+    distances from the query and a set of item attributes.
+    """
+
+    def __init__(self, query, item, threshold):
+        self.query = query
+        # TODO: Remove the item when it's not needed anymore for developing
+        # purposes. remember to remove it from the __repr__ call too.
+        self.item = item
+        self.threshold = threshold
+
+        # organized data structure with all the relevant data from all the
+        # `add`ed match dictionaries, that will be used to calculate the
+        # item's match probability against the object
+        self._matches = {}
+        # self._matches = {
+        #     <match.key>: {
+        #         'match': <float>  <- avg mean on highest queries matches
+        #         <match.weight>: <int>,
+        #         'queries': {
+        #             <match.query>: [<float>, ...]
+        #         }
+        #     }
+        # }
+        # actual match weight, weighted mean for all the matches
+        self.weight = 0
+        # highest match value currently present in _matches
+        self.match = 0
+        # highest matching key
+        self.key = ''
+
+    def add(self, match):
+        k, w = match['key'], match['weight']
+        q, m = match['value'], match['match']
+
+        keydata = self._matches.setdefault(k, {'weight': w, 'queries': {}})
+        querydata = keydata['queries'].setdefault(q, [])
+        querydata.append(m)
+
+        self._log_match_dict(match)
+
+    def _log_match_dict(self, match):
+        # NOTE: LOGGING STUFF
+        good = match['match'] >= .75
+        mstring = 'NEW MATCH DICT: [ m: {m:.2f} - w: {w:.2f} ] ({q}) {k}: {v}'
+        mstring = mstring.format(
+            q=match['query'],
+            k=match['key'],
+            v=match['value'],
+            m=match['match'],
+            w=match['weight']
+        )
+        string = click.style('{}'.format(mstring),
+                             fg='yellow' if good else 'blue')
+
+        log.debug(string)
+
+    # def _get_primary_match(self):
+    #     """Return the match dict with the highest match value. """
+    #     m = None
+    #     for m in self._matches
+
+    def calculate(self):
+        """
+        Calculate the match with all the data added.
+        This method should be called when all the dataset have been added
+        to the match object.
+        """
+        d = self._matches
+        log.debug('Calculated match results:')
+        total_weight = 0
+        total_match = 0
+
+        for k in d.keys():
+            # get the highest match for each query/attr set, then calculate
+            # the match for the key as a mean avg from all the highest
+            # values
+            weight = d[k]['weight']
+            queries = d[k]['queries']
+
+            # sorted high->low of all the highest matches on each query
+            h_match = sorted([max(qmatch) for qmatch in queries.values()])
+            # factor in the `weight` of each match, using its position in
+            # the list as weight. this means that highest values have
+            # highest weight.
+            h_match = [m * (w + 1) for w, m in enumerate(h_match)]
+            # weighted average
+            match = sum(h_match) / sum(range(1, len(h_match) + 1))
+
+            d[k]['match'] = match
+
+            # add the key weight to the total weight
+            total_weight += weight
+            total_match += (match * weight)
+
+            # if the currently evaluated match is higher that the
+            # `primary match value`, switch both match and key
+            if match > self.match:
+                self.match = match
+                self.key = k
+
+            # NOTE: Logging stuff
+            ms = ''.join(['{:.2f}, '.format(m) for m in h_match])[:-2]
+            log.debug(click.style(
+                '  {}: {:.2f} [{}]'.format(k, match, ms),
+                fg='yellow' if match >= self.threshold else '')
+            )
+
+        # average weigthed mean between the matches and the key weights
+        # produces the actual weight of the match, that can be used
+        # in a Result to position it in its rightful place.
+        self.weight = (total_match / total_weight) + self.match
+
+    @property
+    def is_valid(self):
+        return self.match >= self.threshold
+
+    def __repr__(self):
+        return '<Match ({q} @ {i}) W: {w:.3f} V: {v:.3f}>'.format(
+            q=self.query,
+            i=self.item,
+            w=self.weight,
+            v=self.match)
+
+
+class Result:
+    def __init__(self, data, match):
+        """Result generated through a search.
+
+        Args:
+            data (any): search result object
+            match (:class:`Match`): Match object describing
+                similarity between the `data` and the search query
+        """
+
+        self.data = data
+        self.match = match
+
+    def __repr__(self):
+        return '<Result ({v:<3.2f}% | {w:.2f}) on "{k}" [ {d} ]>'.format(
+            d=self.data,
+            k=self.match.key,
+            v=self.match.match * 100,
+            w=self.weight,
+        )
+
+    @property
+    def weight(self):
+        return self.match.weight
+
+    def __lt__(self, other):
+        return self.weight < other.weight
+
+
 class SearchEngine:
-    class Match:
-        """
-        A SearchEngine.Match object takes care of calculating and represents
-        the chance that item matches the search query, given a dataset of
-        distances from the query and a set of item attributes.
-        """
-
-        def __init__(self, query, item, threshold):
-            self.query = query
-            # TODO: Remove the item when it's not needed anymore for developing
-            # purposes. remember to remove it from the __repr__ call too.
-            self.item = item
-            self.threshold = threshold
-
-            # organized data structure with all the relevant data from all the
-            # `add`ed match dictionaries, that will be used to calculate the
-            # item's match probability against the object
-            self._matches = {}
-            # self._matches = {
-            #     <match.key>: {
-            #         'match': <float>  <- avg mean on highest queries matches
-            #         <match.weight>: <int>,
-            #         'queries': {
-            #             <match.query>: [<float>, ...]
-            #         }
-            #     }
-            # }
-            # actual match weight, weighted mean for all the matches
-            self.weight = 0
-            # highest match value currently present in _matches
-            self.match = 0
-            # highest matching key
-            self.key = ''
-
-        def add(self, match):
-            k, w = match['key'], match['weight']
-            q, m = match['value'], match['match']
-
-            keydata = self._matches.setdefault(k, {'weight': w, 'queries': {}})
-            querydata = keydata['queries'].setdefault(q, [])
-            querydata.append(m)
-
-            self._log_match_dict(match)
-
-        def _log_match_dict(self, match):
-            # NOTE: LOGGING STUFF
-            good = match['match'] >= .75
-            mstring = 'NEW MATCH DICT: [ m: {m:.2f} - w: {w:.2f} ] ({q}) {k}: {v}'
-            mstring = mstring.format(
-                q=match['query'],
-                k=match['key'],
-                v=match['value'],
-                m=match['match'],
-                w=match['weight']
-            )
-            string = click.style('{}'.format(mstring),
-                                 fg='yellow' if good else 'blue')
-
-            log.debug(string)
-
-        # def _get_primary_match(self):
-        #     """Return the match dict with the highest match value. """
-        #     m = None
-        #     for m in self._matches
-
-        def calculate(self):
-            """
-            Calculate the match with all the data added.
-            This method should be called when all the dataset have been added
-            to the match object.
-            """
-            d = self._matches
-            log.debug('Calculated match results:')
-            total_weight = 0
-            total_match = 0
-
-            for k in d.keys():
-                # get the highest match for each query/attr set, then calculate
-                # the match for the key as a mean avg from all the highest
-                # values
-                weight = d[k]['weight']
-                queries = d[k]['queries']
-
-                # sorted high->low of all the highest matches on each query
-                h_match = sorted([max(qmatch) for qmatch in queries.values()])
-                # factor in the `weight` of each match, using its position in
-                # the list as weight. this means that highest values have
-                # highest weight.
-                h_match = [m * (w + 1) for w, m in enumerate(h_match)]
-                # weighted average
-                match = sum(h_match) / sum(range(1, len(h_match) + 1))
-
-                d[k]['match'] = match
-
-                # add the key weight to the total weight
-                total_weight += weight
-                total_match += (match * weight)
-
-                # if the currently evaluated match is higher that the
-                # `primary match value`, switch both match and key
-                if match > self.match:
-                    self.match = match
-                    self.key = k
-
-                # NOTE: Logging stuff
-                ms = ''.join(['{:.2f}, '.format(m) for m in h_match])[:-2]
-                log.debug(click.style(
-                    '  {}: {:.2f} [{}]'.format(k, match, ms),
-                    fg='yellow' if match >= self.threshold else '')
-                )
-
-            # average weigthed mean between the matches and the key weights
-            # produces the actual weight of the match, that can be used
-            # in a Result to position it in its rightful place.
-            self.weight = (total_match / total_weight) + self.match
-
-        @property
-        def is_valid(self):
-            return self.match >= self.threshold
-
-        def __repr__(self):
-            return '<Match ({q} @ {i}) W: {w:.3f} V: {v:.3f}>'.format(
-                q=self.query,
-                i=self.item,
-                w=self.weight,
-                v=self.match)
-
-    class Result:
-        def __init__(self, data, match):
-            """Result generated through a search.
-
-            Args:
-                data (any): search result object
-                match (:class:`SearchEngine.Match`): Match object describing
-                    similarity between the `data` and the search query
-            """
-
-            self.data = data
-            self.match = match
-
-        def __repr__(self):
-            return '<Result ({v:<3.2f}% | {w:.2f}) on "{k}" [ {d} ]>'.format(
-                d=self.data,
-                k=self.match.key,
-                v=self.match.match * 100,
-                w=self.weight,
-            )
-
-        @property
-        def weight(self):
-            return self.match.weight
-
-        def __lt__(self, other):
-            return self.weight < other.weight
 
     def __init__(self, keys, limit=-1, threshold=THRESHOLD):
         self.threshold = threshold
@@ -223,7 +226,7 @@ class SearchEngine:
                     }
 
         """
-        match = SearchEngine.Match(query, item, self.threshold)
+        match = Match(query, item, self.threshold)
         keys = keys or self.keys
 
         def splitter(string):
@@ -272,7 +275,7 @@ class SearchEngine:
 
         # Generate the Results list if the match is high enough
         self.results = [
-            SearchEngine.Result(i, m) for i, m in
+            Result(i, m) for i, m in
             zip(items, matches) if m.is_valid
         ]
 
