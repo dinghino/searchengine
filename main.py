@@ -17,8 +17,9 @@ levels = {
 
 
 @click.command()
-@click.option('-v', '--verbose', count=True, default=1)
-@click.option('-l', '--limit', default=-1)
+@click.option('-v', '--verbose', count=True, default=1,
+              help='Level of verbosity, more v more verbose')
+@click.option('-l', '--limit', default=-1, help='limit the number of results')
 def main(verbose, limit):
     if verbose > 4:
         verbose = 4
