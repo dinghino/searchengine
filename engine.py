@@ -4,13 +4,18 @@ import re
 import click
 import jellyfish
 
-from test_data import people  # noqa - testing purposes, not used here
+from test_data import people, profiles  # noqa - testing purposes, not used here
 
 # matching treshold to consider a search result a probable match.
 # Used as default value for SearchEngine initialization
 THRESHOLD = 0.75
 
 log = logging.getLogger('SearchEngine')
+
+
+def reverse_enum(lst):
+    for j, item in enumerate(lst):
+        yield len(lst) - 1 - j, item
 
 
 class Match:
@@ -47,14 +52,14 @@ class Match:
         self.match = 0
         # highest matching key
         self.key = ''
+        self.key_weight = 1
 
     def add(self, match):
         k, w = match['key'], match['weight']
         q, m = match['value'], match['match']
 
         keydata = self._matches.setdefault(k, {'weight': w, 'queries': {}})
-        querydata = keydata['queries'].setdefault(q, [])
-        querydata.append(m)
+        keydata['queries'].setdefault(q, []).append(m)
 
         self._log_match_dict(match)
 
@@ -92,14 +97,27 @@ class Match:
             weight = d[k]['weight']
             queries = d[k]['queries']
 
-            # sorted low->high of all the highest matches on each query
-            h_match = sorted([max(qmatch) for qmatch in queries.values()])
+            # get all the top matches for each query segment and their position
+            # in the sequence, to be used as weight for the result so that we
+            # can generate a weighted mean for sequenced attributes.
+            top_matches = []
+            tm_weights = []
+            for qmatch in queries.values():
+                top = max(qmatch)
+                top_matches.append(top)
+                tm_weights.append(qmatch.index(top) + 1)
+
+            tm_weights = [v * (c + 1) for c, v in reverse_enum(tm_weights)]
+
+            # top_matches = [max(qmatch) for qmatch in queries.values()]
+            # h_idxs = [m.index(v) for m in queries.values() for v in top_matches]
+
             # factor in the `weight` of each match, using its position in
             # the list as weight. this means that highest values have
             # highest weight.
-            h_match = [m * (w + 1) for w, m in enumerate(h_match)]
+            top_matches = [m * (w) for m, w in zip(top_matches, tm_weights)]
             # weighted average for the key match probability
-            match = sum(h_match) / sum(range(1, len(h_match) + 1))
+            match = sum(top_matches) / sum(tm_weights)
             d[k]['match'] = match
 
             # add the key weight to the key total values to calculate the
@@ -112,32 +130,37 @@ class Match:
             if match > self.match:
                 self.match = match
                 self.key = k
+                self.key_weight = weight
 
             # NOTE: Logging stuff
-            ms = ''.join(['{:.2f}, '.format(m) for m in h_match])[:-2]
+            ms = ''.join(['{:.2f}, '.format(m) for m in top_matches])[:-2]
             log.debug(click.style(
                 '  {}: {} [{}]'.format(
                     k,
                     click.style('{:.2f}'.format(match), bold=True),
-                    ms),
-                fg='yellow' if match >= self.threshold else '')
-            )
+                    ms,
+                ),
+                fg='yellow' if match >= self.threshold else ''))
 
         # average weigthed mean between the matches and the key weights
         # produces the actual weight of the match, that can be used
         # in a Result to position it in its rightful place.
-        self.weight = (total_match / total_weight) + self.match
+        self.weight = (total_match / total_weight)
+        self.weight = (self.weight * self.match) + self.key_weight
+
+        import pdb
+        pdb.set_trace()
 
     @property
     def is_valid(self):
         return self.match >= self.threshold
 
     def __repr__(self):
-        return '<Match ({q} @ {i}) W: {w:.3f} V: {v:.3f}>'.format(
+        return '<Match | {q}: {k} | {w:.3f} | {v:.2f}%>'.format(
             q=self.query,
-            i=self.item,
+            k=self.key,
             w=self.weight,
-            v=self.match)
+            v=self.match * 100)
 
 
 class Result:
@@ -158,11 +181,10 @@ class Result:
         self.match = match
 
     def __repr__(self):
-        return '<Result ({v:<3.2f}% | {w:.2f}) on "{k}" [ {d} ]>'.format(
+        return '<Result [ {m} ] [ {i} ]>'.format(
             d=self.data,
-            k=self.match.key,
-            v=self.match.match * 100,
-            w=self.weight,
+            m=self.match,
+            i=self.data,
         )
 
     @property
