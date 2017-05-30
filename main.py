@@ -27,18 +27,47 @@ def main(verbose, limit):
         verbose = 4
     log.setLevel(levels[verbose])
 
-    search = SearchEngine(keys=['fname', 'lname', 'job'])
-    # search = SearchEngine(keys=['name', 'username', 'mail', 'job'])
+    people_search = SearchEngine(
+        keys=['fname', 'lname', 'job'],
+        limit=limit,
+    )
+    profiles_search = SearchEngine(
+        keys=['name', 'username', 'mail', 'job'],
+        limit=limit,
+    )
+
+    _fnc = {
+        'people': (people_search, people),
+        'profiles': (profiles_search, profiles)
+    }
+
+    def search(query, where='people'):
+        func, dataset = _fnc[where]
+        return func(query=query, items=dataset)
+
+    def fmt_help(first, string):
+        return '{}{}'.format(
+            click.style(first, bold=True),
+            string
+        )
+
+    help_ = '{}\n{}\n'.format(
+        fmt_help('Q', 'uit'), fmt_help('S', 'witch data'))
+    search_in = 'people'
 
     while True:
         click.clear()
-
-        q_string = '{} (q to quit)'.format(click.style('Search', fg='green'))
-        query = click.prompt(q_string)
+        click.echo('Searching in: {}'.format(
+            click.style(search_in, bold=True)))
+        click.echo(help_)
+        query = click.prompt(click.style('Search', fg='green'))
         if query == 'q':
             break
+        if query == 's':
+            search_in = 'profiles' if search_in == 'people' else 'people'
+            continue
 
-        result = search(query, DATASET)
+        result = search(query, search_in)
 
         click.secho('\n{}'.format('-' * 79) * 3, fg='yellow')
 
