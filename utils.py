@@ -1,5 +1,9 @@
 import re
 
+STOP_WORDS = [
+    'in', 'con', 'da', 'di', 'del', 'dal', 'su', 'per', 'tra', 'fra',
+]
+
 
 def _dec(fl):
     """Return a stringified more readable float."""
@@ -11,7 +15,10 @@ def clean_split(string):
     Given a string return a list of segments of the string,
     splitted by `r'\W+`, removing shorter than 3 strings.
     """
-    return [w for w in re.split(r'\W+', string) if len(w) >= 3]
+    return [
+        w for w in re.split(r'\W+', string)
+        if len(w) >= 3 and w not in STOP_WORDS
+    ]
 
 
 def get_max_moves(list_, idx):
