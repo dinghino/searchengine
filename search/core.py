@@ -26,8 +26,8 @@ def similarity(query, string):
     """
 
     # split the two strings cleaning out some stuff
-    query = utils.tokenize(query.lower())
-    string = utils.tokenize(string.lower())
+    query = utils.tokenize(query)
+    string = utils.tokenize(string)
 
     # if one of the two strings is falsy (no content, or was passed with items
     # short enough to be trimmed out), return 0 here to avoid ZeroDivisionError
@@ -35,34 +35,31 @@ def similarity(query, string):
     if len(query) == 0 or len(string) == 0:
         return 0
 
-    shortest, longest = sorted((query, string), key=lambda x: len(x))
-
+    short, long_ = sorted((query, string), key=lambda x: len(x))
 
     matches = {}
     # generate a matrix from the two strings and loop on every couple
-    for string1, string2 in ((s1, s2) for s1 in longest for s2 in shortest):
+    for string1, string2 in ((s1, s2) for s1 in long_ for s2 in short):
         # get the jaro winkler equality between the two strings
         match = jf.jaro_winkler(string1, string2)
         # calculate the distance factor for the position of the segments
         # on their respective lists
-        positional = utils.position_similarity(
-            string1, string2, longest, shortest)
+        positional = utils.position_similarity(string1, string2, long_, short)
 
         # get them together and append to the matches dictionary
-        match = (match, positional)
-        matches.setdefault(string1, []).append(match)
+        matches.setdefault(string1, []).append((match, positional))
 
     # get the highest value for each list, the apply the word-distance factor
     # the key takes the jaro winkler distance value to get the max value
     matches = [max(m, key=lambda x: x[0]) for m in matches.values()]
-    _weights = (config.MATCH_WEIGHT, config.DIST_WEIGHT)
-    matches = [utils.weighted_average((m, d), _weights) for m, d in matches]
+    weights_ = utils.scale_to_one((config.MATCH_WEIGHT, config.DIST_WEIGHT))
+    matches = [utils.weighted_average((m, d), weights_) for m, d in matches]
 
     # get the weighted mean for all the highest matches and apply the highest
     # match value found as coefficient as multiplier, to add weights to more
     # coherent matches.
-    mean_match = (sum(matches) / len(matches)) * max(matches)
-    return mean_match
+    weights_ = list(range(len(matches), 0, -1))
+    return utils.weighted_average(matches, weights_) * max(matches)
 
 
 def search(
@@ -122,9 +119,6 @@ def search(
 
     weights = utils.scale_to_one(weights)
     weights = {attr: w for attr, w in zip(attributes, weights)}
-
-    if not threshold:
-        threshold = 0
 
     for obj in dataset:
         partial_matches = []
