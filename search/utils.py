@@ -161,13 +161,17 @@ def position_similarity(el1, el2, seq1, seq2):
     `el2` on the `seq2` iterable.
 
     The function is used to get a value describing how far two words are in a
-    phrase(as list, as in ``string.split(' ')`` or, in our case through
-    :func:`search.utils.tokenize').
+    phrase (as list, as in ``string.split(' ')`` or, in our case through
+    :func:`search.utils.tokenize`).
 
     Moves are relative to el1 on seq1, which `should` be the longest set
     for the function to work properly.
 
-    .. note: : The given strings ** MUST ** be inside the corresponding list.
+    .. warning::
+        The function is currently broken and always returns 1, making
+        the position inside the matching string irrelevant.
+
+    .. note:: The given strings **MUST** be inside the corresponding list.
 
     Arguments:
         el1 (any): element of the ``seq1`` iterable
@@ -180,7 +184,7 @@ def position_similarity(el1, el2, seq1, seq2):
     Returns:
         float: value ``0 -> 1`` representing how far the two words are,
         where ``1`` represent the closest(same position) and tending to zero
-        the farthest on the maximum available moves possible on ``l1``.
+        the farthest on the maximum available moves possible on ``seq1``.
 
     """
     return 1
