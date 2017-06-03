@@ -1,6 +1,9 @@
 """
-Utility module for the search engine, contains various functions to do common
-operations on lists and set of iterables
+Utility module for the search engine
+
+Contains various functions to do common operations on strings and iterables,
+such as normalization, tokenization, averages, splitting and walking through
+the elements of the iterable/string.
 """
 import re
 from search import config
