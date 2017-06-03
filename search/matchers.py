@@ -1,4 +1,10 @@
+"""
+Matcher functions to determine similarity between two strings
 
+Using different algorithms and given two strings, each function returns a
+value between 0 and 1, where 0 is completely different and 1 represent complete
+equality (as in "hello world", "hello world")
+"""
 import jellyfish
 from search import utils, config
 

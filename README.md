@@ -1,7 +1,7 @@
 # PyFinder
 _Yet another search engine built in python_.
 
-This project contains a really simple search engine capable of digesting any list of objects of any kind, made as a prototype for another project i'm working on, in collaboration with @simo86.
+This project contains a really simple search engine capable of digesting any list of objects of any kind, made as a prototype for another project i'm working on, in collaboration with [@simo86](https://github.com/simo86).
 Since I liked where it was going, we extracted it from the main project to improve it and make it standalone.
 
 ## Why?

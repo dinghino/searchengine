@@ -1,4 +1,6 @@
 """
+General configuration for the whole application.abs
+
 This module contains constants and configuration options for the search engine,
 that allows to quickly customize the threshold, matching parameters' weights
 and other options without having to touch the code.

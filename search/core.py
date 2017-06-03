@@ -1,7 +1,7 @@
 """
 Search API core module
 
-Contains the main functions to get match values and searching
+Contains the main functions to perform a search.
 """
 from search import utils, config
 from search.matchers import similarity
