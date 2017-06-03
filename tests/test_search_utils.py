@@ -6,6 +6,14 @@ import pytest
 
 
 class TestUtils:
+    def string_walker(self, string, size, func):
+        """Utility function for walker utilities such as splitter and slider"""
+        expected = []
+        for partial in func(string, size):
+            assert partial in string
+            expected.append(partial)
+        assert ''.join(expected) == string
+
     def test_normalize(self):
         v = utils.normalize([5, 4, 3, 2.5, 1, 7])
         assert pytest.approx(sum(v)) == 1
@@ -62,3 +70,19 @@ class TestUtils:
         assert 1 == utils.position_similarity('there', 'world', q, s)  # 8,1
         assert 1 == utils.position_similarity('it', 'it', q, s)        # 4,3
         assert 1 == utils.position_similarity('hello', 'is', q, s)     # 0,3
+
+    def test_splitter(self):
+        string = "hello there, it's a sunny day!"
+        self.string_walker(string, 3, utils.splitter)
+        self.string_walker(string, 6, utils.splitter)
+        self.string_walker(string, len(string) + 3, utils.splitter)
+        self.string_walker(string, -1, utils.splitter)
+        self.string_walker('', 5, utils.splitter)
+
+    def test_slider(self):
+        string = "hello there, it's a sunny day!"
+        self.string_walker(string, 3, utils.splitter)
+        self.string_walker(string, 6, utils.splitter)
+        self.string_walker(string, len(string) + 3, utils.splitter)
+        self.string_walker(string, -1, utils.splitter)
+        self.string_walker('', 5, utils.splitter)

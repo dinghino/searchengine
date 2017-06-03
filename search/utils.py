@@ -11,6 +11,54 @@ def _dec(fl):
     return '{:.2f}'.format(fl)
 
 
+def splitter(string, chunk_size):
+    """
+    Generator function that returns chunks of `string` of size `chunk_size`.
+    If chunk_size is ``-1`` the whole string is returned.
+
+    Args:
+        string (str): the string to get the chunks from
+        chunk_size (int): max length of the chunks (last one can be shorter)
+
+    Yields:
+        one chunks of `string` of size `chunk_size` on each call such as
+
+            >>> splitter('hello, world', 3)
+            'hel', 'lo,', ' wo', 'rld'
+    """
+    l = len(string)
+    if chunk_size <= 0 or l == 0 or chunk_size >= l:
+        yield string
+        return 0
+
+    i = 0
+    while i < l:
+        n, i = i, i + chunk_size
+        yield string[n:i]
+
+
+def slider(string, chunk_size):
+    """
+    Generator function that slides through a string and returns strings
+    of (max) length `chunk_size`, sliding one character at a time.
+
+    Args:
+        string (str): the string to walk
+        chunk_size (int): the size of each chunk
+
+    Yield:
+        one chunks of `string` of size `chunk_size` on each call such as
+
+            >>> splitter('hello, world', 3)
+            'hel', 'ell', 'llo', ...
+
+    """
+    i = 0
+    while i <= len(string) - chunk_size:
+        yield string[i:i + chunk_size]
+        i += 1
+
+
 def normalize(iterable):
     """
     Normalize an iterable of numbers in a series that sums up to 1.
