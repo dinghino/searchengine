@@ -99,3 +99,11 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+.vscode/
+
+# documentation
+docs/_build_html
+docs/build
+docs/source/api/autosummary/*
+!docs/source/api/autosummary/index.rst
