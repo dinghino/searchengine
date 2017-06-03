@@ -27,10 +27,12 @@ def splitter(string, chunk_size):
             'hel', 'lo,', ' wo', 'rld'
     """
     l = len(string)
-    if chunk_size <= 0 or l == 0 or chunk_size >= l:
+    if chunk_size <= 0:
+        # if requested size is less than zero return the whole string
+        chunk_size = l
+    if l == 0:
         yield string
-        return 0
-
+        return
     i = 0
     while i < l:
         n, i = i, i + chunk_size
@@ -53,8 +55,18 @@ def slider(string, chunk_size):
             'hel', 'ell', 'llo', ...
 
     """
+    l = len(string)
+    if chunk_size <= 0:
+        # if requested size is less than zero return the whole string
+        chunk_size = l
+    if l == 0 or chunk_size >= l:
+        yield string
+        return
+
     i = 0
-    while i <= len(string) - chunk_size:
+    stop = l - chunk_size
+
+    while i <= stop:
         yield string[i:i + chunk_size]
         i += 1
 
