@@ -10,9 +10,18 @@ class TestUtils:
         """Utility function for walker utilities such as splitter and slider"""
         expected = []
         for partial in func(string, size):
+            if 0 < size <= len(string):
+                # if size is between 0 and the string length the partial length
+                # should be what we expected, from 1 to size
+                assert len(partial) <= size
+            elif size == -1 or size > len(string):
+                # partial string should be the whole string if size is -1
+                assert len(partial) == len(string)
+
             assert partial in string
             expected.append(partial)
-        assert ''.join(expected) == string
+
+        return expected
 
     def test_normalize(self):
         v = utils.normalize([5, 4, 3, 2.5, 1, 7])
@@ -73,16 +82,39 @@ class TestUtils:
 
     def test_splitter(self):
         string = "hello there, it's a sunny day!"
-        self.string_walker(string, 3, utils.splitter)
-        self.string_walker(string, 6, utils.splitter)
-        self.string_walker(string, len(string) + 3, utils.splitter)
-        self.string_walker(string, -1, utils.splitter)
-        self.string_walker('', 5, utils.splitter)
+
+        def assert_equal(seq, phrase=string):
+            assert phrase == ''.join(seq)
+
+        seq = self.string_walker(string, len(string) + 3, utils.splitter)
+        assert_equal(seq)
+        seq = self.string_walker(string, 3, utils.splitter)
+        assert_equal(seq)
+        seq = self.string_walker(string, 6, utils.splitter)
+        assert_equal(seq)
+        seq = self.string_walker(string, -1, utils.splitter)
+        assert_equal(seq)
+        seq = self.string_walker('', 5, utils.splitter)
+        assert_equal(seq, '')
 
     def test_slider(self):
-        string = "hello there, it's a sunny day!"
-        self.string_walker(string, 3, utils.splitter)
-        self.string_walker(string, 6, utils.splitter)
-        self.string_walker(string, len(string) + 3, utils.splitter)
-        self.string_walker(string, -1, utils.splitter)
-        self.string_walker('', 5, utils.splitter)
+        string = "hello there, it's a cloudy day!"
+
+        def assert_equal(seq, phrase=string):
+            # Take the first character of each string in our sequence but the
+            # last one, that will be added as is, since our slider function
+            # walks the string index by index.
+            comp = [w[0] for w in seq[:-1]]
+            comp.extend(seq[-1])
+            assert phrase == ''.join(comp)
+
+        seq = self.string_walker(string, len(string) + 3, utils.slider)
+        assert_equal(seq)
+        seq = self.string_walker(string, 3, utils.slider)
+        assert_equal(seq)
+        seq = self.string_walker(string, 6, utils.slider)
+        assert_equal(seq)
+        seq = self.string_walker(string, -1, utils.slider)
+        assert_equal(seq)
+        seq = self.string_walker('', 5, utils.slider)
+        assert_equal(seq, '')
