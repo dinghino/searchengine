@@ -29,7 +29,6 @@ def splitter(string, chunk_size):
     l = len(string)
     if chunk_size <= 0 or l == 0 or chunk_size >= l:
         yield string
-        return 0
 
     i = 0
     while i < l:
