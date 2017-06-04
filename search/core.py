@@ -4,7 +4,7 @@ Search API core module
 Contains the main functions to perform a search.
 """
 from search import utils, config
-from search.matchers import similarity
+from search.matchers import lazy_match as matcher
 
 
 def search(
@@ -16,6 +16,15 @@ def search(
     on the given `attributes` list against the passed `query` string.
 
     Extra arguments allows some customization on the search results (see below)
+
+    .. note::
+        Since this function implements the core functionality, it has the
+        shortcut import
+
+        >>> from search.core import search
+        >>> from search import search
+
+        Will have the same effect
 
     Arguments:
         query (str): String to search for
@@ -31,7 +40,7 @@ def search(
             the index of the attribute name, reversed (first -> more weight).
 
     Returns:
-        list: A list containing ``[0:limit]`` resources from the given table,
+        list: A list containing ``[0:limit]`` resources from the given dataset,
         sorted by relevance.
 
     Raises:
@@ -45,16 +54,14 @@ def search(
         >>> from models import Item
         >>> from search import search
         >>> results = search('awesome', ['name', 'category'], Item.select())
-        [<Item name: 'awesome item' cat: 'generic'>]
+        [
+            <Item name: 'awesome item' cat: 'generic'>,
+            <Item name: 'normal item', cat: 'awesome'>,
+        ]
 
-    .. note::
-        Since this function implements the core functionality, it has the
-        shortcut import
+        Note that even though the category is a perfect match, it's ranked
+        lower priority, so it comes after.
 
-        >>> from search.core import search
-        >>> from search import search
-
-        Will have the same effect
     """
     matches = []
     if not weights or len(weights) != len(attributes):
@@ -71,18 +78,20 @@ def search(
         for attr in attributes:
             attrval = getattr(obj, attr)
 
-            match = similarity(query, attrval)
+            match = matcher(query, attrval)
             partial_matches.append({'attr': attr, 'match': match})
 
         # get the highest match for each attribute and multiply it by the
         # attribute weight, so we can get the weighted average to return
         match = max(partial_matches, key=lambda m: m['match'])
-        match = match['match'] * weights[match['attr']]
+        # match = match['match']  # * weights[match['attr']]
+        match, rating = match['match'], match['match'] + weights[match['attr']]
 
         if match >= threshold:
-            matches.append({'data': obj, 'match': match})
+            result_data = {'data': obj, 'match': match, 'rating': rating}
+            matches.append(result_data)
 
-    matches.sort(key=lambda m: m['match'], reverse=True)
+    matches.sort(key=lambda m: m['rating'], reverse=True)
 
     if limit > 0:
         matches = matches[:limit]
