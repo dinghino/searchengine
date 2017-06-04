@@ -55,8 +55,9 @@ def token_sort_ratio(query, string):
             match = utils.ratio(q_token, token)
             if match > matches[q_token]:
                 matches[q_token] = match
-                if match == 1:
-                    break
+                # FIXME: Using average this shouldn't be here!
+                # if match == 1:
+                #     break
 
     return utils.average(matches.values())
 

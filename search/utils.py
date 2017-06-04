@@ -198,7 +198,7 @@ def sorted_intersect(query_tokens, string_tokens):
 
     Example:
 
-        >> > sorted_intersect([1, 3, 2, 4], [3, 4, 5])
+        >>> sorted_intersect([1, 3, 2, 4], [3, 4, 5])
         [3, 4], [1, 2], [5]
     """
     common = [
@@ -230,7 +230,7 @@ def normalize(iterable):
         list: Normalized float values, in the same order as the one provided.
 
     Example:
-        >> > normalize([3, 2, 1])
+        >>> normalize([3, 2, 1])
         [0.5, 0.333333, 0.166667]
 
     """
@@ -244,7 +244,7 @@ def scale_to_one(iterable):
     equals to 1
 
     Example:
-        >> > scale_to_one([5, 4, 3, 2, 1])
+        >>> scale_to_one([5, 4, 3, 2, 1])
         [1, 0.8, 0.6, 0.4, 0.2]
     """
     m = max(iterable)
@@ -286,12 +286,24 @@ def weighted_average(values, weights=None):
     return val / weights
 
 
-def generate_weights(iterable):
+def generate_weights(iterable, normalizer=scale_to_one):
     """
     Generate normalized weights for the iterable elements in reversed order.
+
+    Arguments:
+        iterable (iterable): iterable to generate weights for
+        normalizer (func): normalizer function. one of :any:`utils.normalize`
+            :any:`utils.scale_to_one` (default) or any function that operates
+            similarly
+
+    Returns:
+        list - normalized floats with length matching the given iterable
+        length.
     """
     weights = list(range(len(iterable), 0, -1))
-    return scale_to_one(weights)
+    if not normalizer:
+        return weights
+    return normalizer(weights)
 
 
 def max_distance(sequence, idx):
@@ -311,9 +323,9 @@ def max_distance(sequence, idx):
         int: maximum moves available in any direction.
 
     Example:
-        >> > utils.get_max_moves(['a', 'b', 'c', 'd', 'e'], 1)
+        >>> utils.get_max_moves(['a', 'b', 'c', 'd', 'e'], 1)
         4  # index 1 -> 'b', so max is 4 moves right
-        >> > utils.get_max_moves(['a', 'b', 'c', 'd', 'e'], 6)
+        >>> utils.get_max_moves(['a', 'b', 'c', 'd', 'e'], 6)
         5  # can move left 5
     """
 
