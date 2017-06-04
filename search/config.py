@@ -19,3 +19,6 @@ MIN_WORD_LENGTH = 3
 
 #: Regex that will be used to split a string into separate chunks
 STR_SPLIT_REGEX = r'\W+'
+
+#: words marked as stopwords will be excluded by the tokenizer functions
+STOP_WORDS = []
