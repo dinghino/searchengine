@@ -2,19 +2,13 @@
 Testing module for the search core functionalities
 """
 from search import core
-from tests.helpers import Item, PHRASES
-
-
-# TODO: Delete. used for pdb sequences of Item
-def ps(seq):
-    [print(v) for v in seq]
+from tests.helpers import Item
 
 
 class TestCore:
     @classmethod
     def setup_class(cls):
-        [Item(words) for words in PHRASES]
-        cls.items = Item.items
+        cls.items = Item.setup()
         cls.search = core.SearchEngine(['words'], limit=10)
 
     def test_single_words(self):

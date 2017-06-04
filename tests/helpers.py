@@ -21,6 +21,11 @@ class Item:
         Item.items.append(self)
 
     @staticmethod
+    def setup(contents=PHRASES):
+        Item.items = [Item(phrase) for phrase in contents]
+        return Item.items
+
+    @staticmethod
     def get_by_length(min_length=0, max_length=1):
         """
         Get an alphabetically sorted list of items that wrap a phrase with
