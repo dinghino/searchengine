@@ -108,14 +108,15 @@ class SearchEngine:
         weights = weights or self.weights
         limit = limit or self.limit
         threshold = threshold or self.threshold
-
+        print('===Search configuration===\n- attr: %s weights: %s limit: %d, threshold: %.2f' %
+              (attributes, weights, limit, threshold))
         matches = []
         if not weights or len(weights) != len(attributes):
             # list of integers of the same length of `attributes` as in
             # [3, 2, 1] for attributes = ['a', 'b', 'c']
             weights = list(range(len(attributes), 0, -1))
 
-        weights = utils.scale_to_one(weights)
+        weights = utils.normalize(weights)
         weights = {attr: w for attr, w in zip(attributes, weights)}
 
         for obj in dataset:
@@ -134,13 +135,18 @@ class SearchEngine:
             match, attr_weight = match['match'], weights[match['attr']]
             rating = match + attr_weight
 
+            result_data = {'data': obj, 'match': match, 'rating': rating}
+            print('[{:.2f} rated: {:.2f} on `{}`] {}'.format(
+                match, rating, attr, obj))
             if match >= threshold:
-                result_data = {'data': obj, 'match': match, 'rating': rating}
                 matches.append(result_data)
 
         matches.sort(key=lambda m: m['rating'], reverse=True)
 
         if limit > 0:
             matches = matches[:limit]
-
+        print('*' * 79)
+        for m in matches:
+            print(print('[{:.2f} rated: {:.2f}] {}'.format(
+                m['match'], m['rating'], str(m['data'])[:30])))
         return [m['data'] for m in matches]
