@@ -31,10 +31,18 @@ Basic usage
 
 .. code-block:: python
 
-    from search import search
+    from search import SearchEngine
 
     collection = Model.select()  # returns an iterable of objects
-    results = search('query', ['attr'], collection)
+    search_engine = SearchEngine(['attr_name'], limit=10)
+    results = search_engine.search('query', collection)
+    # [...]
+
+    results = search_engine.search('query', collection, limit=-1)
+    # [all items over equality threshold]
+
+    results = search_engine('query', collection)
+    # callable object, since we are lazy
 
 
 

@@ -17,7 +17,7 @@ Also, since it does not rely on any kind of stored index - either in file or in 
 ## Basic usage
 
 ```python
-from search import search
+from search import SearchEngine
 
 # Have some objects ready to search!
 class Item:
@@ -27,7 +27,10 @@ class Item:
 names = ['john doe', ]  # some data
 collection = [Item(name) for name in names]
 
-result = search('john', ['value'], collection)
+engine = SearchEngine(['value'], limit=10)
+
+result = engine.search('john', collection)
+# or directly engine('john', collectio)
 
 ```
 
@@ -45,7 +48,11 @@ can be used to hot reload the documentation that will be served at `127.0.0.1:80
 
 ## Testing
 
-Tests are built upon
+Tests are built with `pytest`, so to quickly run tests:
+
+    pytest
+
+More options can be found in [pytest documentation](https://docs.pytest.org/en/latest/contents.html)
 
 ## License
 
