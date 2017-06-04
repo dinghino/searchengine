@@ -1,6 +1,3 @@
-Quick setup
-===========
-
 Yet ANOTHER search library?
 ============================
 

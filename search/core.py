@@ -94,7 +94,7 @@ class SearchEngine:
 
             >>> from models import Item
             >>> from search import search
-            >>> results = search('awesome', ['name', 'category'], Item.select())
+            >>> results = search('aweso', ['name', 'category'], Item.select())
             [
                 <Item name: 'awesome item' cat: 'generic'>,
                 <Item name: 'normal item', cat: 'awesome'>,
