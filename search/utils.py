@@ -139,7 +139,7 @@ def tokenize(string,
     """
     return [
         w for w in re.split(regexp, string.lower())
-        if len(w) > min_len
+        if len(w) > min_len and w not in config.STOP_WORDS
     ]
 
 

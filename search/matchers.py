@@ -9,7 +9,7 @@ from search import utils, config
 
 
 # =====================================================================
-# String similarity
+# String similarity functions
 # ---------------------------------------------------------------------
 # A set of functions that calculate the edit distance between two
 # strings
@@ -48,16 +48,15 @@ def token_sort_ratio(query, string):
         # loop every token in the query, adding a default similarity == 0
         # to the matches dictionary
         matches[q_token] = 0
-        for s_word in tokenized_string:
-            # loop for every word in the searched string
-            for token in utils.shifter(string, len(q_token)):
-                # and call the slider on each of them, getting the similariy
-                # for every extracted token
-                match = utils.ratio(q_token, token)
-                if match > matches[q_token]:
-                    matches[q_token] = match
-                    if match == 1:
-                        break
+        # loop for every word in the searched string
+        for token in utils.shifter(tokenized_string, len(q_token)):
+            # and call the slider on each of them, getting the similariy
+            # for every extracted token
+            match = utils.ratio(q_token, token)
+            if match > matches[q_token]:
+                matches[q_token] = match
+                if match == 1:
+                    break
 
     return utils.average(matches.values())
 
@@ -91,49 +90,31 @@ def intersect_token_ratio(query, string):
 
 
 def lazy_match(query, string):
-    # Find difference in lengths of tokens to determine which algorithm to
-    # use. This helps in performances while mantaining affidability on the
-    # search result.
 
-    # 1. tokenize query and string
     query_tokens = utils.tokenize_set(query)
     string_tokens = utils.tokenize_set(string)
     shortest, longest = sorted((query_tokens, string_tokens))
     len_short, len_long = len(shortest), len(longest)
+
     # If the longest has no length it's useless to continue
     if len_long == 0:
         return 0
 
-    diff = len_long - len_long
-
     if len_long == 1:
         # len_short == 1 too, so 1 word against 1 word
         return simple_ratio(query, string)
-
-    if 3 < len_short < 5:
-        # if the length of the short is enough, try with a
+    if len_short == 1 and len_long < 4:
+        # at most one word against a short string
         return best_token_ratio(query, string)
 
-    elif 1 <= diff >= 3:
-        # almost same length, we can try with a token_sort_ratio, that tokenize
-        # the strings, sort them and get the average for each segment of the
-        # query against the string
+    if len_short < 3 and len_long < 5:
+        # if the length of the short is enough, try with a
         return token_sort_ratio(query, string)
 
     else:
         # in any other condition, such as short query against long string
         # use intersect_ratio
         return intersect_token_ratio(query, string)
-
-    #   * shortest/longest tokenized (counted words after cleanup)
-    #   * difference of word count
-    # 3. choose algorithm
-    #   * if the strings are both short (1-2 words) a direct ratio
-    #     should suffice
-    #   * if both are very long (i.e. 20+?) a direct ratio may suffice. we may
-    #     try with a best_token_ratio approach
-    #   * if count diff is high (normal case, i.e. short query long string)
-    #     use the token set approach
 
 
 def similarity(query, string):
