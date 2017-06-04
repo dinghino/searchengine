@@ -8,9 +8,6 @@ the elements of the iterable/string.
 import re
 from difflib import SequenceMatcher  # noqa
 
-import jellyfish  # noqa
-
-
 from search import config
 
 
@@ -26,7 +23,6 @@ def ratio(query, string):
     Simple ratio between the whole strings. values 0 -> 1.
     Should be good for lengths == 1
     """
-    # return jellyfish.jaro_winkler(query, string)
     return SequenceMatcher(None, query, string).ratio()
 
 
