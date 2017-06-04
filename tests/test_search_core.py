@@ -15,10 +15,7 @@ class TestCore:
     def setup_class(cls):
         [Item(words) for words in PHRASES]
         cls.items = Item.items
-
-        def search(cls, query, sequence):
-            return core.search(query, ['words'], sequence, limit=10)
-        cls.search = search
+        cls.search = core.SearchEngine(['words'], limit=10)
 
     def test_single_words(self):
         seq = Item.get_by_length(max_length=1)
@@ -32,7 +29,7 @@ class TestCore:
     def test_short_phrases(self):
         seq = Item.get_by_length(3, 5)
         res = self.search('sherlock holmes', seq)
-        res_inverted = self.search('holmes sherlock', seq)
+        engine_results = self.search('holmes sherlock', seq)
         expected = [
             'sherlock holmes clapped upon knee',
             'sherlock holmes foretold exquisite mouth',
@@ -41,9 +38,18 @@ class TestCore:
         ]
 
         assert res == expected
-        assert res_inverted == expected
+        assert engine_results == expected
         res = self.search('watson', seq)
         assert res == [
             "watson have learned something",
             "what wanted what doctor watson",
         ]
+
+    def test_search_with_params(self):
+        seq = Item.get_by_length(3, 5)
+        res = self.search('sherlock holmes', seq, limit=2, threshold=.95)
+        expected = [
+            'sherlock holmes clapped upon knee',
+            'sherlock holmes foretold exquisite mouth',
+        ]
+        assert res == expected
