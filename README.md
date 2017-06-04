@@ -6,7 +6,7 @@ Since I liked where it was going, we extracted it from the main project to impro
 
 ## Why?
 
-There are lots and lots of search engines in python. This is another one, made expressly for prototyping and for placeholding. allows simple queries on any type of objects - as long as you search on strings attributes - and works directly on iterable of such objects (coming from any source, like _list_s or even _generator_ functions.)
+There are lots and lots of search engines in python. This is another one, made expressly for prototyping and for placeholding. allows simple queries on any type of objects - as long as you search on strings attributes - and works directly on iterable of such objects (coming from any source, like _list_ or even _generator_ functions).
 
 For this reason it's probably not well suited to work in production, but for testing purposes should do its job.
 
