@@ -23,10 +23,10 @@ class TestCore:
     def test_single_words(self):
         seq = Item.get_by_length(max_length=1)
 
-        res = self.search('inco', seq)
+        res = self.search('inconvene', seq)
         assert res == ['inconvenience']
 
-        res = self.search('laug', seq)
+        res = self.search('laugh', seq)
         assert res == ['laughter']
 
     def test_short_phrases(self):
@@ -34,17 +34,16 @@ class TestCore:
         res = self.search('sherlock holmes', seq)
         res_inverted = self.search('holmes sherlock', seq)
         expected = [
-            'sherlock holmes wrote english capital',
             'sherlock holmes clapped upon knee',
-            'sherlock holmes upon grey walls',
             'sherlock holmes foretold exquisite mouth',
-            'home with nerves worked',      # ?
+            'sherlock holmes upon grey walls',
+            'sherlock holmes wrote english capital',
         ]
 
         assert res == expected
         assert res_inverted == expected
         res = self.search('watson', seq)
         assert res == [
-            "what wanted what doctor watson",
             "watson have learned something",
+            "what wanted what doctor watson",
         ]
