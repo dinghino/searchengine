@@ -1,9 +1,12 @@
 """
 Testing module for search.utils. Even utils need some testing!
 """
-from search import utils
+from search import utils, matchers
 import pytest
 
+
+# TODO: create test_search_matchers and move refactored functions
+# from utils to matchers in there
 
 class TestUtils:
     def string_walker(self, string, size, func):
@@ -61,24 +64,30 @@ class TestUtils:
         # with all `falsy` results checked.
         q, s = 'pinco'.split(' '), 'guerra pinco pallo'.split(' ')
 
-        assert 1 == utils.position_similarity('pinco', 'guerra', q, s)  # 0,0
-        assert 1 == utils.position_similarity('pinco', 'pinco', q, s)   # 0,1
+        assert 1 == matchers.position_similarity(
+            'pinco', 'guerra', q, s)  # 0,0
+        assert 1 == matchers.position_similarity(
+            'pinco', 'pinco', q, s)   # 0,1
 
         q = 'pallo pinco'.split(' ')
-        assert 1 == utils.position_similarity('pallo', 'guerra', q, s)  # 0,1
-        assert 1 == utils.position_similarity('pinco', 'guerra', q, s)  # 1,0
-        assert 1 == utils.position_similarity('pinco', 'pinco', q, s)   # 1,1
-        assert 1 == utils.position_similarity('pallo', 'guerra', q, s)  # 0,0
+        assert 1 == matchers.position_similarity(
+            'pallo', 'guerra', q, s)  # 0,1
+        assert 1 == matchers.position_similarity(
+            'pinco', 'guerra', q, s)  # 1,0
+        assert 1 == matchers.position_similarity(
+            'pinco', 'pinco', q, s)   # 1,1
+        assert 1 == matchers.position_similarity(
+            'pallo', 'guerra', q, s)  # 0,0
 
         q = 'hello world is it a sunny out there'
         s = 'hello there it is a sunny world'
         q, s = q.split(' '), s.split(' ')
 
-        assert 1 == utils.position_similarity('world', 'there', q, s)  # 1,1
-        assert 1 == utils.position_similarity('hello', 'world', q, s)  # 0,6
-        assert 1 == utils.position_similarity('there', 'world', q, s)  # 8,1
-        assert 1 == utils.position_similarity('it', 'it', q, s)        # 4,3
-        assert 1 == utils.position_similarity('hello', 'is', q, s)     # 0,3
+        assert 1 == matchers.position_similarity('world', 'there', q, s)  # 1,1
+        assert 1 == matchers.position_similarity('hello', 'world', q, s)  # 0,6
+        assert 1 == matchers.position_similarity('there', 'world', q, s)  # 8,1
+        assert 1 == matchers.position_similarity('it', 'it', q, s)        # 4,3
+        assert 1 == matchers.position_similarity('hello', 'is', q, s)     # 0,3
 
     def test_splitter(self):
         string = "hello there, it's a sunny day!"
@@ -108,13 +117,13 @@ class TestUtils:
             comp.extend(seq[-1])
             assert phrase == ''.join(comp)
 
-        seq = self.string_walker(string, len(string) + 3, utils.slider)
+        seq = self.string_walker(string, len(string) + 3, utils.shifter)
         assert_equal(seq)
-        seq = self.string_walker(string, 3, utils.slider)
+        seq = self.string_walker(string, 3, utils.shifter)
         assert_equal(seq)
-        seq = self.string_walker(string, 6, utils.slider)
+        seq = self.string_walker(string, 6, utils.shifter)
         assert_equal(seq)
-        seq = self.string_walker(string, -1, utils.slider)
+        seq = self.string_walker(string, -1, utils.shifter)
         assert_equal(seq)
-        seq = self.string_walker('', 5, utils.slider)
+        seq = self.string_walker('', 5, utils.shifter)
         assert_equal(seq, '')
