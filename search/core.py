@@ -3,8 +3,7 @@ Search API core module
 
 Contains the main functions to perform a search.
 """
-from search import utils, config
-from search.matchers import lazy_match as matcher
+from search import utils, config, matchers
 
 
 class SearchEngine:
@@ -26,12 +25,14 @@ class SearchEngine:
     to the :any:`SearchEngine.search` method documentation.
     """
 
-    def __init__(self, attributes,
-                 limit=-1, threshold=config.THRESHOLD, weights=None):
+    def __init__(self, attributes, limit=-1,
+                 threshold=config.THRESHOLD, weights=None,
+                 matcher=matchers.lazy_match):
         self.attributes = attributes
         self.limit = limit
         self.threshold = threshold
         self.weights = weights
+        self.matcher = matcher
 
         if not self.weights or len(attributes) != len(weights):
             self.weights = utils.generate_weights(attributes)
@@ -125,7 +126,7 @@ class SearchEngine:
             for attr in attributes:
                 attrval = getattr(obj, attr)
 
-                match = matcher(query, attrval)
+                match = self.matcher(query, attrval)
                 partial_matches.append({'attr': attr, 'match': match})
 
             # get the highest match for each attribute and multiply it by the
