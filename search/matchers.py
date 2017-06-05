@@ -18,9 +18,11 @@ def simple_ratio(query, string):
     return utils.ratio(query, string)
 
 
-def best_token_ratio(query, string):
-    query = utils.sorted_unique_tokens(query)
-    string = utils.sorted_unique_tokens(string)
+def best_token_ratio(query, string, tokenize=True):
+    if tokenize:
+        query = utils.sorted_unique_tokens(query)
+        string = utils.sorted_unique_tokens(string)
+
     string = utils.stringify_tokens(string)
 
     prob = 0
@@ -32,19 +34,21 @@ def best_token_ratio(query, string):
     return prob
 
 
-def token_sort_ratio(query, string):
+def token_sort_ratio(query, string, tokenize=True):
     """
     generate tokens from query and string, then for each query token
     find the best partial ratio on the string and get the average value
     """
-    query_tokens = utils.sorted_unique_tokens(query)
-    string_tokens = utils.sorted_unique_tokens(string)
+    if tokenize:
+        query = utils.sorted_unique_tokens(query)
+        string = utils.sorted_unique_tokens(string)
     # generate and sort a set of strings, removing duplicates, then
     # join them together again as they are (no spaces or punctuation)
-    tokenized_string = utils.stringify_tokens(string_tokens)
+    tokenized_string = utils.stringify_tokens(string)
+    # tokenized_query = utils.stringify_tokens(query)
 
     matches = {}
-    for q_token in query_tokens:
+    for q_token in query:
         # loop every token in the query, adding a default similarity == 0
         # to the matches dictionary
         matches[q_token] = 0
@@ -55,23 +59,24 @@ def token_sort_ratio(query, string):
             match = utils.ratio(q_token, token)
             if match > matches[q_token]:
                 matches[q_token] = match
-                # FIXME: Using average this shouldn't be here!
-                # if match == 1:
-                #     break
+                if match == 1:
+                    break
 
     return utils.average(matches.values())
 
 
-def intersect_token_ratio(query, string):
+def intersect_token_ratio(query, string, tokenize=True):
     """
     Perform a match utilizing the intersection method.
     """
-    query = utils.sorted_unique_tokens(query)
-    string = utils.sorted_unique_tokens(string)
+    if tokenize:
+        query = utils.sorted_unique_tokens(query)
+        string = utils.sorted_unique_tokens(string)
+
     common, diff_q, diff_s = utils.sorted_intersect(query, string)
-    t0 = ''.join(common)            # common elements for query and string
-    t1 = ''.join(common + diff_q)   # common plus the diff elements on query
-    t2 = ''.join(common + diff_s)   # common plus diff elements on string
+    t0 = ' '.join(common)            # common elements for query and string
+    t1 = ' '.join(common + diff_q)   # common plus the diff elements on query
+    t2 = ' '.join(common + diff_s)   # common plus diff elements on string
     best = 0
     for (q, s) in ((t0, t1), (t1, t2), (t0, t2)):
         match = utils.ratio(q, s)
@@ -92,9 +97,9 @@ def intersect_token_ratio(query, string):
 
 def lazy_match(query, string):
 
-    query_tokens = utils.tokenize_set(query)
-    string_tokens = utils.tokenize_set(string)
-    shortest, longest = sorted((query_tokens, string_tokens))
+    query_tokens = utils.sorted_unique_tokens(query)
+    string_tokens = utils.sorted_unique_tokens(string)
+    longest, shortest = sorted((query_tokens, string_tokens))
     len_short, len_long = len(shortest), len(longest)
 
     # If the longest has no length it's useless to continue
@@ -104,18 +109,22 @@ def lazy_match(query, string):
     if len_long == 1:
         # len_short == 1 too, so 1 word against 1 word
         return simple_ratio(query, string)
+
     if len_short == 1 and len_long < 4:
         # at most one word against a short string
-        return best_token_ratio(query, string)
+        return best_token_ratio(
+            query_tokens, string_tokens, tokenize=False)
 
     if len_short < 3 and len_long < 5:
         # if the length of the short is enough, try with a
-        return token_sort_ratio(query, string)
+        return token_sort_ratio(
+            query_tokens, string_tokens, tokenize=False)
 
     else:
         # in any other condition, such as short query against long string
         # use intersect_ratio
-        return intersect_token_ratio(query, string)
+        return intersect_token_ratio(
+            query_tokens, string_tokens, tokenize=False)
 
 
 def similarity(query, string):
