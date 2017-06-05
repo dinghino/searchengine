@@ -201,10 +201,7 @@ def sorted_intersect(query_tokens, string_tokens):
         >>> sorted_intersect([1, 3, 2, 4], [3, 4, 5])
         [3, 4], [1, 2], [5]
     """
-    common = [
-        i for i in query_tokens for j in string_tokens
-        if ratio(i, j) >= config.THRESHOLD
-    ]
+    common = [i for i in query_tokens for j in string_tokens if i == j]
     rest_query = (el for el in query_tokens if el not in common)
     rest_string = (el for el in string_tokens if el not in common)
     return sorted(common), sorted(rest_query), sorted(rest_string)
