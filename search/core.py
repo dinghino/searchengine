@@ -38,7 +38,7 @@ class SearchEngine:
             self.weights = utils.generate_weights(attributes)
 
     def __call__(self, query, dataset, attributes=None, limit=None,
-                 threshold=None, weights=None):
+                 threshold=None, weights=None, matcher=None):
 
         return self.search(
             query=query,
@@ -47,11 +47,12 @@ class SearchEngine:
             limit=limit,
             threshold=threshold,
             weights=weights,
+            matcher=matcher,
         )
 
     def search(
             self, query, dataset, attributes=None, limit=None,
-            threshold=None, weights=None):
+            threshold=None, weights=None, matcher=None):
         """
         Main function of the package, allows to do a fuzzy full-text search on
         the rows of the given `table` model, looking up the value
@@ -109,8 +110,8 @@ class SearchEngine:
         weights = weights or self.weights
         limit = limit or self.limit
         threshold = threshold or self.threshold
-        print('===Search configuration===\n- attr: %s weights: %s limit: %d, threshold: %.2f' %
-              (attributes, weights, limit, threshold))
+        matcher = matcher or self.matcher
+
         matches = []
         if not weights or len(weights) != len(attributes):
             # list of integers of the same length of `attributes` as in
@@ -126,7 +127,7 @@ class SearchEngine:
             for attr in attributes:
                 attrval = getattr(obj, attr)
 
-                match = self.matcher(query, attrval)
+                match = matcher(query, attrval)
                 partial_matches.append({'attr': attr, 'match': match})
 
             # get the highest match for each attribute and multiply it by the
@@ -136,18 +137,13 @@ class SearchEngine:
             match, attr_weight = match['match'], weights[match['attr']]
             rating = match + attr_weight
 
-            result_data = {'data': obj, 'match': match, 'rating': rating}
-            print('[{:.2f} rated: {:.2f} on `{}`] {}'.format(
-                match, rating, attr, obj))
             if match >= threshold:
+                result_data = {'data': obj, 'match': match, 'rating': rating}
                 matches.append(result_data)
 
         matches.sort(key=lambda m: m['rating'], reverse=True)
 
         if limit > 0:
             matches = matches[:limit]
-        print('*' * 79)
-        for m in matches:
-            print(print('[{:.2f} rated: {:.2f}] {}'.format(
-                m['match'], m['rating'], str(m['data'])[:30])))
+
         return [m['data'] for m in matches]
