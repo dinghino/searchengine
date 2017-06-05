@@ -16,7 +16,7 @@ class Item:
     items = []  # quick access. may go when creating stuff
 
     def __init__(self, words):
-        self.words = ' '.join(words)
+        self.words = words
         self.length = len(words)
         Item.items.append(self)
 
