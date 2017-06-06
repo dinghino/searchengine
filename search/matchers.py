@@ -62,7 +62,7 @@ def token_sort_ratio(query, string, tokenize=True):
                 if match == 1:
                     break
 
-    return utils.average(matches.values())
+    return max(matches.values())
 
 
 def intersect_token_ratio(query, string, tokenize=True):
@@ -110,13 +110,13 @@ def lazy_match(query, string):
         # len_short == 1 too, so 1 word against 1 word
         return simple_ratio(query, string)
 
-    if len_short == 1 and len_long < 4:
-        # at most one word against a short string
+    if len_short == 1 and len_long <= 4:
+        # one word against a short string, 1 < diff < 3
         return best_token_ratio(
             query_tokens, string_tokens, tokenize=False)
 
-    if len_short < 3 and len_long < 5:
-        # if the length of the short is enough, try with a
+    if 2 < len_short <= 4 and len_long <= 6:
+        # token length diff between 4 and 2
         return token_sort_ratio(
             query_tokens, string_tokens, tokenize=False)
 
