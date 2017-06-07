@@ -155,6 +155,19 @@ class SearchEngine:
                 }
                 matches.append(result_data)
 
+        # adjust weights, setting the highest attribute weight to the attribute
+        # that got more matches. This helps when searching through a keyword
+        # attribute (like a `category`) that has a default lower weight but
+        # that, if searched by name, should be higher in rating.
+        # This is done by checking the amount of results for each attribute
+        # and creating the weights from those values.
+        adjusted_weights = utils.generate_weights_from_matches(matches)
+
+        # adjust the rating adding the new weight for the attribute that
+        # generated the highest match for each object.
+        for match in matches:
+            match['rating'] += adjusted_weights[match['attr']]
+
         matches.sort(key=lambda m: m['rating'], reverse=True)
 
         if limit > 0:
