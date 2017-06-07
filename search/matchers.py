@@ -96,33 +96,30 @@ def intersect_token_ratio(query, string, tokenize=True):
 
 
 def lazy_match(query, string):
-
-    query_tokens = utils.sorted_unique_tokens(query)
-    string_tokens = utils.sorted_unique_tokens(string)
-    shortest, longest = sorted((query_tokens, string_tokens))
+    q_tokens = utils.sorted_unique_tokens(query)
+    s_tokens = utils.sorted_unique_tokens(string)
+    shortest, longest = sorted((q_tokens, s_tokens), key=lambda x: len(x))
     len_short, len_long = len(shortest), len(longest)
 
     # If the longest has no length it's useless to continue
     if len_long == 0:
         return 0
 
-    if len_long == 1:
+    elif len_long == 1:
         # len_short == 1 too, so 1 word against 1 word
         return simple_ratio(query, string)
 
-    if len_short == 1 and len_long <= 4:
+    elif len_short == 1 and len_long <= 4:
         # one word against a short string, 1 < diff < 3
-        return best_token_ratio(
-            query_tokens, string_tokens, tokenize=False)
+        return best_token_ratio(q_tokens, s_tokens, tokenize=False)
 
-    if 2 < len_short <= 4 and len_long <= 6:
-        # token length diff between 4 and 2
-        return token_sort_ratio(
-            query_tokens, string_tokens, tokenize=False)
+    elif 1 <= len_short <= 4 and len_long <= 10:
+        # token length diff between 8 and 6
         return token_sort_ratio(q_tokens, s_tokens, tokenize=False)
 
     else:
-        # in any other condition, such as short query against long string
-        # use intersect_ratio
-        return intersect_token_ratio(
-            query_tokens, string_tokens, tokenize=False)
+        # in any other condition, such as short query against very long string
+        # go with the intersect.
+        # This option SHOULD go only with fairly long queries - as far as a
+        # query can be long - against long strings
+        return intersect_token_ratio(q_tokens, s_tokens, tokenize=False)
