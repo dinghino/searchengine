@@ -27,10 +27,10 @@ def best_token_ratio(query, string, tokenize=True):
 
     prob = 0
     for segment in query:
-        match = utils.best_partial_ratio(segment, string)
+        match = utils.best_partial_ratio(segment, string)  # shift string
+        if match > .995:
+            return 1.0
         prob = match if match > prob else prob
-        if prob == 1:
-            break
     return prob
 
 
@@ -42,10 +42,6 @@ def token_sort_ratio(query, string, tokenize=True):
     if tokenize:
         query = utils.sorted_unique_tokens(query)
         string = utils.sorted_unique_tokens(string)
-    # generate and sort a set of strings, removing duplicates, then
-    # join them together again as they are (no spaces or punctuation)
-    tokenized_string = utils.stringify_tokens(string)
-    # tokenized_query = utils.stringify_tokens(query)
 
     matches = {}
     for q_token in query:
@@ -53,14 +49,14 @@ def token_sort_ratio(query, string, tokenize=True):
         # to the matches dictionary
         matches[q_token] = 0
         # loop for every word in the searched string
-        for token in utils.shifter(tokenized_string, len(q_token)):
+        for token in string:
             # and call the slider on each of them, getting the similariy
             # for every extracted token
             match = utils.ratio(q_token, token)
             if match > matches[q_token]:
+                if match > .995:
+                    return 1.0
                 matches[q_token] = match
-                if match == 1:
-                    break
 
     return max(matches.values())
 
