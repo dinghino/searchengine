@@ -106,6 +106,12 @@ class SearchEngine:
             lower priority, so it comes after.
 
         """
+        if len(utils.tokenize(query)) == 0:
+            # TODO: Raise custom exception QueryTooShort or something, since
+            # when the query will be tokenized for matching it will generate
+            # an empty set and won't have matches.
+            return []
+
         attributes = attributes or self.attributes
         weights = weights or self.weights
         limit = limit or self.limit
@@ -119,7 +125,7 @@ class SearchEngine:
             weights = list(range(len(attributes), 0, -1))
 
         weights = utils.normalize(weights)
-        weights = {attr: w for attr, w in zip(attributes, weights)}
+        weights = dict(zip(attributes, weights))
 
         for obj in dataset:
             partial_matches = []
@@ -130,16 +136,37 @@ class SearchEngine:
                 match = matcher(query, attrval)
                 partial_matches.append({'attr': attr, 'match': match})
 
-            # get the highest match for each attribute and multiply it by the
-            # attribute weight, so we can get the weighted average to return
+            # get the highest match found for each object after processing
+            # all the attributes
             match = max(partial_matches, key=lambda m: m['match'])
-            # match = match['match']  # * weights[match['attr']]
-            match, attr_weight = match['match'], weights[match['attr']]
-            rating = match + attr_weight
-
-            if match >= threshold:
-                result_data = {'data': obj, 'match': match, 'rating': rating}
+            value = match['match']
+            if value >= threshold:
+                attr = match['attr']
+                # Consider all the other matches when generating the actual
+                # total value of matching for the rating. This helps when
+                # we may have one object with two high match and one with
+                # just one match.
+                tot_value = value + sum([p['match'] for p in partial_matches])
+                result_data = {
+                    'data': obj,
+                    'match': value,
+                    'rating': tot_value + weights[attr],
+                    'attr': attr,
+                }
                 matches.append(result_data)
+
+        # adjust weights, setting the highest attribute weight to the attribute
+        # that got more matches. This helps when searching through a keyword
+        # attribute (like a `category`) that has a default lower weight but
+        # that, if searched by name, should be higher in rating.
+        # This is done by checking the amount of results for each attribute
+        # and creating the weights from those values.
+        adjusted_weights = utils.generate_weights_from_matches(matches)
+
+        # adjust the rating adding the new weight for the attribute that
+        # generated the highest match for each object.
+        for match in matches:
+            match['rating'] += adjusted_weights[match['attr']]
 
         matches.sort(key=lambda m: m['rating'], reverse=True)
 

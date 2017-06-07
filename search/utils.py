@@ -36,8 +36,8 @@ def best_partial_ratio(query, string):
     for str_segment in shifter(string, len(query)):
         m = ratio(query, str_segment)
         v = m if m > v else m
-        if v == 1:
-            break
+        if v > .995:
+            return 1.0
     return v
 
 
