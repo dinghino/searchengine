@@ -99,7 +99,7 @@ def lazy_match(query, string):
 
     query_tokens = utils.sorted_unique_tokens(query)
     string_tokens = utils.sorted_unique_tokens(string)
-    longest, shortest = sorted((query_tokens, string_tokens))
+    shortest, longest = sorted((query_tokens, string_tokens))
     len_short, len_long = len(shortest), len(longest)
 
     # If the longest has no length it's useless to continue
