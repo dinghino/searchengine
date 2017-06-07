@@ -249,7 +249,7 @@ def scale_to_one(iterable):
 
 
 # =====================================================================
-# Averages and distances
+# Averages and weighting
 # ---------------------------------------------------------------------
 # Functions that allows calculating arithmetic average, weighted mean
 # or list elements distances (such as max_distance that returns the
@@ -303,30 +303,10 @@ def generate_weights(iterable, normalizer=scale_to_one):
     return normalizer(weights)
 
 
-def max_distance(sequence, idx):
     """
-    Given a list an int in range(len(sequence)), determine the maximum
-    amount of `movements` available from that index position in the list.
-
-    Arguments:
-        sequence(any with __len__): iterable to calculate the maximum moves
-            into. It's used only to get its `len`, so any object that
-            implements the `__len__` method will do.
-        idx(int): index to count from.
-            The value ** must ** be `>= 0` but ** can ** be over the length
-            of the list.
 
     Returns:
-        int: maximum moves available in any direction.
-
-    Example:
-        >>> utils.get_max_moves(['a', 'b', 'c', 'd', 'e'], 1)
-        4  # index 1 -> 'b', so max is 4 moves right
-        >>> utils.get_max_moves(['a', 'b', 'c', 'd', 'e'], 6)
-        5  # can move left 5
     """
-
-    return max(idx, (len(sequence) - (idx + 1)))
 
 
 # =====================================================================
