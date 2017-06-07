@@ -119,7 +119,7 @@ class SearchEngine:
             weights = list(range(len(attributes), 0, -1))
 
         weights = utils.normalize(weights)
-        weights = {attr: w for attr, w in zip(attributes, weights)}
+        weights = dict(zip(attributes, weights))
 
         for obj in dataset:
             partial_matches = []
