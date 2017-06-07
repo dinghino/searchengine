@@ -136,15 +136,23 @@ class SearchEngine:
                 match = matcher(query, attrval)
                 partial_matches.append({'attr': attr, 'match': match})
 
-            # get the highest match for each attribute and multiply it by the
-            # attribute weight, so we can get the weighted average to return
+            # get the highest match found for each object after processing
+            # all the attributes
             match = max(partial_matches, key=lambda m: m['match'])
-            # match = match['match']  # * weights[match['attr']]
-            match, attr_weight = match['match'], weights[match['attr']]
-            rating = match + attr_weight
-
-            if match >= threshold:
-                result_data = {'data': obj, 'match': match, 'rating': rating}
+            value = match['match']
+            if value >= threshold:
+                attr = match['attr']
+                # Consider all the other matches when generating the actual
+                # total value of matching for the rating. This helps when
+                # we may have one object with two high match and one with
+                # just one match.
+                tot_value = value + sum([p['match'] for p in partial_matches])
+                result_data = {
+                    'data': obj,
+                    'match': value,
+                    'rating': tot_value + weights[attr],
+                    'attr': attr,
+                }
                 matches.append(result_data)
 
         matches.sort(key=lambda m: m['rating'], reverse=True)
