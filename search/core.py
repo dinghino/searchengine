@@ -106,6 +106,12 @@ class SearchEngine:
             lower priority, so it comes after.
 
         """
+        if len(utils.tokenize(query)) == 0:
+            # TODO: Raise custom exception QueryTooShort or something, since
+            # when the query will be tokenized for matching it will generate
+            # an empty set and won't have matches.
+            return []
+
         attributes = attributes or self.attributes
         weights = weights or self.weights
         limit = limit or self.limit
