@@ -4,7 +4,7 @@ that was used or tested for the search engine matching and rating algorithms.
 Functions are yet to be deleted but are NOT used anywhere and kept for reference
 while developing.
 """
-
+# flake8: noqa
 from search import config, utils
 
 
@@ -178,3 +178,47 @@ def max_distance(sequence, idx):
     """
 
     return max(idx, (len(sequence) - (idx + 1)))
+
+# =====================================
+# Test utils
+
+
+def test_max_distance(self):
+    l1 = ['a', 'b', 'c', 'd']
+    l2 = ['a', 'b', 'c', 'd', 'e']
+
+    assert 2 == utils.max_distance(l1, 1)  # l1.b
+    assert 2 == utils.max_distance(l1, 2)  # l1.c
+    assert 3 == utils.max_distance(l2, 1)  # l2.b
+    assert 4 == utils.max_distance(l2, 4)  # l2.e
+
+
+def _test_position_similarity(self):
+    # FIXME: The function is broken, but for continuity the test remains
+    # with all `falsy` results checked.
+    q, s = 'pinco'.split(' '), 'guerra pinco pallo'.split(' ')
+
+    assert 1 == matchers.position_similarity(
+        'pinco', 'guerra', q, s)  # 0,0
+    assert 1 == matchers.position_similarity(
+        'pinco', 'pinco', q, s)   # 0,1
+
+    q = 'pallo pinco'.split(' ')
+    assert 1 == matchers.position_similarity(
+        'pallo', 'guerra', q, s)  # 0,1
+    assert 1 == matchers.position_similarity(
+        'pinco', 'guerra', q, s)  # 1,0
+    assert 1 == matchers.position_similarity(
+        'pinco', 'pinco', q, s)   # 1,1
+    assert 1 == matchers.position_similarity(
+        'pallo', 'guerra', q, s)  # 0,0
+
+    q = 'hello world is it a sunny out there'
+    s = 'hello there it is a sunny world'
+    q, s = q.split(' '), s.split(' ')
+
+    assert 1 == matchers.position_similarity('world', 'there', q, s)  # 1,1
+    assert 1 == matchers.position_similarity('hello', 'world', q, s)  # 0,6
+    assert 1 == matchers.position_similarity('there', 'world', q, s)  # 8,1
+    assert 1 == matchers.position_similarity('it', 'it', q, s)        # 4,3
+    assert 1 == matchers.position_similarity('hello', 'is', q, s)     # 0,3
