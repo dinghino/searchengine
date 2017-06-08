@@ -25,7 +25,7 @@ class SearchEngine:
     to the :any:`SearchEngine.search` method documentation.
     """
 
-    def __init__(self, attributes, limit=-1,
+    def __init__(self, attributes=None, limit=-1,
                  threshold=config.THRESHOLD, weights=None,
                  matcher=matchers.lazy_match):
         self.attributes = attributes
@@ -34,8 +34,9 @@ class SearchEngine:
         self.weights = weights
         self.matcher = matcher
 
-        if not self.weights or len(attributes) != len(weights):
-            self.weights = utils.generate_weights(attributes)
+        if attributes:
+            if not self.weights or len(attributes) != len(weights):
+                self.weights = utils.generate_weights(attributes)
 
     def __call__(self, query, dataset, attributes=None, limit=None,
                  threshold=None, weights=None, matcher=None):
@@ -106,17 +107,21 @@ class SearchEngine:
             lower priority, so it comes after.
 
         """
+        attributes = attributes or self.attributes
+        weights = weights or self.weights
+        limit = limit or self.limit
+        threshold = threshold or self.threshold
+        matcher = matcher or self.matcher
+
+        if not attributes:
+            raise ValueError('Missing attributes to search into.')
+
         if len(utils.tokenize(query)) == 0:
             # TODO: Raise custom exception QueryTooShort or something, since
             # when the query will be tokenized for matching it will generate
             # an empty set and won't have matches.
             return []
 
-        attributes = attributes or self.attributes
-        weights = weights or self.weights
-        limit = limit or self.limit
-        threshold = threshold or self.threshold
-        matcher = matcher or self.matcher
 
         matches = []
         if not weights or len(weights) != len(attributes):
