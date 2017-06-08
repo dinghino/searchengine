@@ -8,9 +8,6 @@ and other options without having to touch the code.
 #: string equality weight for weighted average with positional coefficient
 MATCH_WEIGHT = 1
 
-#: positional coeff weight for weighted avg with equality match
-DIST_WEIGHT = 1
-
 #: matching threshold for a resource to be considered for the inclusion.
 THRESHOLD = 0.75
 
