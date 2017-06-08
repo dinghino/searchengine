@@ -147,6 +147,8 @@ class SearchEngine:
 
             for attr in attributes:
                 attrval = getattr(obj, attr)
+                if len(attrval) == 0:
+                    continue
 
                 match = matcher(query, attrval)
                 partial_matches.append({'attr': attr, 'match': match})
