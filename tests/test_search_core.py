@@ -9,21 +9,21 @@ class TestCore:
     @classmethod
     def setup_class(cls):
         Phrase.setup()
-        cls.search = core.SearchEngine(['words'], limit=10)
+        cls.searchPhrase = core.SearchEngine(['words'], limit=10)
 
     def test_single_words(self):
         seq = Phrase.get_by_length(max_length=1)
 
-        res = self.search('inconvene', seq)
+        res = self.searchPhrase('inconvene', seq)
         assert res == ['inconvenience']
 
-        res = self.search('laugh', seq)
+        res = self.searchPhrase('laugh', seq)
         assert res == ['laughter']
 
     def test_short_phrases(self):
         seq = Phrase.get_by_length(3, 7)
-        results = self.search('sherlock holmes', seq)
-        reversed_query_results = self.search('holmes sherlock', seq)
+        results = self.searchPhrase('sherlock holmes', seq)
+        reversed_query_results = self.searchPhrase('holmes sherlock', seq)
 
         expected = [
             'Sherlock Holmes upon the grey walls.',
@@ -33,12 +33,12 @@ class TestCore:
 
         assert results == expected
         assert reversed_query_results == expected
-        results = self.search('watson', seq)
+        results = self.searchPhrase('watson', seq)
         assert results == ['Ah, Watson, you have learned something!', ]
 
     def test_search_with_params(self):
         seq = Phrase.get_by_length(7, 10)
-        res = self.search('sherlock holmes', seq, limit=2, threshold=.95)
+        res = self.searchPhrase('sherlock holmes', seq, limit=2, threshold=.95)
         expected = [
             'About nine o\'clock Sherlock Holmes had not yet returned.',
             'Oh, Mr. Holmes, my hair to the bitter end.',
@@ -48,7 +48,7 @@ class TestCore:
 
     def test_search_long_phrases(self):
         seq = Phrase.get_by_length(7, 20)
-        results = self.search('sherlock holmes', seq)
+        results = self.searchPhrase('sherlock holmes', seq)
         expected = [
             'About nine o\'clock Sherlock Holmes had not yet returned.',  # noqa: E501
             'Holmes gazed long and complex story was so remarkable in its details that it may be set aside altogether.',  # noqa: E501
