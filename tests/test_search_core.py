@@ -1,6 +1,8 @@
 """
 Testing module for the search core functionalities
 """
+
+import pytest
 from search import core
 from tests.helpers import Phrase
 
@@ -62,3 +64,12 @@ class TestCore:
             'Sherlock Holmes had brought a gush of hope which sank into a desultory chat with me over in despair.',  # noqa: E501
         ]
         assert results == expected
+
+    def test_search_no_query(self):
+        results = self.searchPhrase('', Phrase.get_by_length())
+        assert results == []
+
+    def test_search_no_attributes(self):
+        search = core.SearchEngine()
+        with pytest.raises(ValueError):
+            search('I won\'t work!', Phrase.get_by_length())
