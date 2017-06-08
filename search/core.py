@@ -132,6 +132,8 @@ class SearchEngine:
             # an empty set and won't have matches.
             return []
 
+        def create_result(obj, match, score, attr):
+            return {'data': obj, 'match': match, 'rating': score, 'attr': attr}
 
         matches = []
         if not weights or len(weights) != len(attributes):
@@ -164,13 +166,9 @@ class SearchEngine:
                 # we may have one object with two high match and one with
                 # just one match.
                 tot_value = value + sum([p['match'] for p in partial_matches])
-                result_data = {
-                    'data': obj,
-                    'match': value,
-                    'rating': tot_value + weights[attr],
-                    'attr': attr,
-                }
-                matches.append(result_data)
+                score = tot_value + weights[attr]
+                result = create_result(obj, value, score, attr)
+                matches.append(result)
 
         # adjust weights, setting the highest attribute weight to the attribute
         # that got more matches. This helps when searching through a keyword
