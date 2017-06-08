@@ -51,6 +51,16 @@ class SearchEngine:
             matcher=matcher,
         )
 
+    def select_results(self, matches, threshold, limit):
+        """
+        sort and trim the matches list, returning a list with the objects found
+        """
+        matches.sort(key=lambda m: m['rating'], reverse=True)
+        if limit > 0:
+            matches = matches[:limit]
+
+        return [m['data'] for m in matches]
+
     def search(
             self, query, dataset, attributes=None, limit=None,
             threshold=None, weights=None, matcher=None):
@@ -173,9 +183,4 @@ class SearchEngine:
         for match in matches:
             match['rating'] += adjusted_weights[match['attr']]
 
-        matches.sort(key=lambda m: m['rating'], reverse=True)
-
-        if limit > 0:
-            matches = matches[:limit]
-
-        return [m['data'] for m in matches]
+        return self.select_results(matches, threshold, limit)
