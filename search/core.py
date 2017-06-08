@@ -135,6 +135,18 @@ class SearchEngine:
         def create_result(obj, match, score, attr):
             return {'data': obj, 'match': match, 'rating': score, 'attr': attr}
 
+        if len(attributes) == 1:
+            # perform a simplest search since we only have one attribute to
+            # consider
+            matches = []
+            attr_name = attributes[0]
+            for obj in dataset:
+                match = matcher(query, getattr(obj, attr_name))
+                if match >= threshold:
+                    matches.append(create_result(obj, match, match, attr_name))
+
+            return self.select_results(matches, threshold, limit)
+
         matches = []
         if not weights or len(weights) != len(attributes):
             # list of integers of the same length of `attributes` as in
